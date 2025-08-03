@@ -1,0 +1,69 @@
+package rules
+
+import com.example.domain.FaultEvent;
+
+rule "ICMP 정상 응답"
+when
+    $e : FaultEvent(
+        icmpStatus == true,
+        icmpAvgRttMs != null,
+        icmpAvgRttMs <= 1000
+    )
+then
+    $e.setEventCode("ICMP_OK");
+    $e.setSeverity("NORMAL");
+    $e.setReason("ICMP 응답 시간 양호");
+    System.out.println("[RULE] ICMP_OK 감지");
+end
+
+rule "ICMP 지연 응답 (LOSS)"
+when
+    $e : FaultEvent(
+        icmpStatus == true,
+        icmpAvgRttMs != null,
+        icmpAvgRttMs > 1000
+    )
+then
+    $e.setEventCode("ICMP_LOSS");
+    $e.setSeverity("LOW");
+    $e.setReason("ICMP 응답 지연 발생");
+    System.out.println("[RULE] ICMP_LOSS 감지");
+end
+
+rule "ICMP 응답 없음 (TIMEOUT)"
+when
+    $e : FaultEvent(
+        icmpStatus == false,
+        icmpPacketLossPct >= 100.0
+    )
+then
+    $e.setEventCode("ICMP_TIMEOUT");
+    $e.setSeverity("MEDIUM");
+    $e.setReason("ICMP 응답 없음: 지속적 Timeout");
+    System.out.println("[RULE] ICMP_TIMEOUT 감지");
+end
+
+rule "ICMP 명령 실패 (FAIL)"
+when
+    $e : FaultEvent(
+        icmpAvgRttMs == null
+    )
+then
+    $e.setEventCode("ICMP_FAILED");
+    $e.setSeverity("HIGH");
+    $e.setReason("ICMP 명령 실행 실패");
+    System.out.println("[RULE] ICMP_FAILED 감지");
+end
+
+rule "HLS 응답 없음 (OFFLINE)"
+when
+    $e : FaultEvent(
+        hlsStatus == false
+    )
+then
+    $e.setEventCode("HLS_OFFLINE");
+    $e.setSeverity("HIGH");
+    $e.setReason("HLS 스트리밍 응답 없음");
+    System.out.println("[RULE] HLS_OFFLINE 감지");
+end
+
