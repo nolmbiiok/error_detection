@@ -1,69 +1,35 @@
 package rules
 
-import com.example.domain.FaultEvent;
+import com.mentoring.entity.FaultEventEntity;
 
-rule "ICMP 정상 응답"
+rule "Debug Rule"
 when
-    $e : FaultEvent(
-        icmpStatus == true,
-        icmpAvgRttMs != null,
-        icmpAvgRttMs <= 1000
-    )
+    $e : FaultEventEntity()
 then
-    $e.setEventCode("ICMP_OK");
-    $e.setSeverity("NORMAL");
-    $e.setReason("ICMP 응답 시간 양호");
-    System.out.println("[RULE] ICMP_OK 감지");
+    System.out.println("✅ [DEBUG] 룰 실행됨 - " + $e.getFaultType());
 end
 
-rule "ICMP 지연 응답 (LOSS)"
-when
-    $e : FaultEvent(
-        icmpStatus == true,
-        icmpAvgRttMs != null,
-        icmpAvgRttMs > 1000
-    )
-then
-    $e.setEventCode("ICMP_LOSS");
-    $e.setSeverity("LOW");
-    $e.setReason("ICMP 응답 지연 발생");
-    System.out.println("[RULE] ICMP_LOSS 감지");
+rule "HLS_TIMEOUT 2회 이하는 LOW"
+    when
+        $event : FaultEventEntity(faultType == "HLS_TIMEOUT", hlsTimeoutCount < 3)
+    then
+        System.out.println("💡 [RULE TRIGGERED] HLS_TIMEOUT 2회 이하는 LOW");
+        $event.setSeverity(FaultEventEntity.Severity.LOW);
+        $event.setReason("일시적 HLS 타임아웃 (정상 감시 범주)");
 end
 
-rule "ICMP 응답 없음 (TIMEOUT)"
-when
-    $e : FaultEvent(
-        icmpStatus == false,
-        icmpPacketLossPct >= 100.0
-    )
-then
-    $e.setEventCode("ICMP_TIMEOUT");
-    $e.setSeverity("MEDIUM");
-    $e.setReason("ICMP 응답 없음: 지속적 Timeout");
-    System.out.println("[RULE] ICMP_TIMEOUT 감지");
+rule "HLS_TIMEOUT 3회 이상은 HIGH"
+    when
+        $event : FaultEventEntity(faultType == "HLS_TIMEOUT", hlsTimeoutCount >= 3)
+    then
+        $event.setSeverity(FaultEventEntity.Severity.HIGH);
+        $event.setReason("HLS_TIMEOUT 지속 장애 상태");
 end
 
-rule "ICMP 명령 실패 (FAIL)"
-when
-    $e : FaultEvent(
-        icmpAvgRttMs == null
-    )
-then
-    $e.setEventCode("ICMP_FAILED");
-    $e.setSeverity("HIGH");
-    $e.setReason("ICMP 명령 실행 실패");
-    System.out.println("[RULE] ICMP_FAILED 감지");
-end
 
-rule "HLS 응답 없음 (OFFLINE)"
+rule "Debug Rule Test"
 when
-    $e : FaultEvent(
-        hlsStatus == false
-    )
+    $e : FaultEventEntity()
 then
-    $e.setEventCode("HLS_OFFLINE");
-    $e.setSeverity("HIGH");
-    $e.setReason("HLS 스트리밍 응답 없음");
-    System.out.println("[RULE] HLS_OFFLINE 감지");
+    System.out.println("💥 Drools 룰이 실행되었습니다!");
 end
-

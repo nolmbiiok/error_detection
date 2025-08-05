@@ -1,31 +1,36 @@
 package com.mentoring.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "fault_logs")
-@Data
+@Getter
+@Setter
+@Table(name = "fault_events", uniqueConstraints = {
+	    @UniqueConstraint(columnNames = {"cctv_id", "fault_type"})
+	})
 public class FaultEventEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long cctvId;
-
-    private String faultType; // 예: "ICMP", "HLS"
-
+    @Column(nullable = false)
+    private Long cctvId; 
+    
+    private String faultType;
     private LocalDateTime occurredAt;
-
     private LocalDateTime resolvedAt;
 
     @Enumerated(EnumType.STRING)
     private Severity severity;
 
     private String reason;
-
+    private long hlsTimeoutCount; 
+    
+  
     public enum Severity {
         LOW, MEDIUM, HIGH, CRITICAL
     }

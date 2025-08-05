@@ -15,20 +15,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DroolsConfig {
 
-    @Bean
-    public KieContainer kieContainer() {
-        KieServices ks = KieServices.Factory.get();
-        KieFileSystem kfs = ks.newKieFileSystem();
+	@Bean
+	public KieContainer kieContainer() {
+	    KieServices ks = KieServices.Factory.get();
+	    KieFileSystem kfs = ks.newKieFileSystem();
 
-        // 룰 파일 로드 (resources/rules/fault-rules.drl)
-        Resource ruleFile = ResourceFactory.newClassPathResource("rules/fault-rules.drl", getClass());
-        kfs.write("src/main/resources/rules/fault-rules.drl", ruleFile);
+	    Resource drlFile = ResourceFactory.newClassPathResource("rules/fault-rules.drl", getClass());
+	    kfs.write(ResourceFactory.newClassPathResource("rules/fault-rules.drl"));
 
-        KieBuilder kieBuilder = ks.newKieBuilder(kfs);
-        kieBuilder.buildAll();
-
-        return ks.newKieContainer(ks.getRepository().getDefaultReleaseId());
-    }
+	    ks.newKieBuilder(kfs).buildAll();
+	    return ks.newKieContainer(ks.getRepository().getDefaultReleaseId());
+	}
 
     @Bean
     public KieBase kieBase(KieContainer kieContainer) {
@@ -36,7 +33,7 @@ public class DroolsConfig {
     }
 
     @Bean
-    public KieSession kieSession(KieBase kieBase) {
-        return kieBase.newKieSession();
+    public KieSession kieSession(KieContainer kieContainer) {
+        return kieContainer.newKieSession(); 
     }
 }

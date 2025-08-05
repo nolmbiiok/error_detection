@@ -2,34 +2,44 @@ package com.mentoring.service;
 
 import com.mentoring.entity.FaultEventEntity;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Collection;
+
+import org.kie.api.definition.KiePackage;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.springframework.stereotype.Service;
-
 @Service
 @RequiredArgsConstructor
 public class FaultRuleService {
 
     private final KieContainer kieContainer;
-    private final FaultMonitorService faultMonitorService;  // Redis 연속 장애 감지 서비스
 
-    public void checkRule(FaultEventEntity event) {
+    public void checkWithRules(FaultEventEntity event) {
+    	
         KieSession kieSession = kieContainer.newKieSession();
-        kieSession.insert(event); 
-        kieSession.fireAllRules();
-        kieSession.dispose();
+        Collection<KiePackage> kiePackages = kieSession.getKieBase().getKiePackages();
+        int totalRuleCount = 0;
 
-        // 룰 실행 후 연속 장애 감지 수행
-        faultMonitorService.trackFaultEvent(event);
-    }
 
-    public void evaluate(FaultEventEntity event) {
-        KieSession kieSession = kieContainer.newKieSession();
+
+		System.out.println("=== Loaded Drools Rules ===");
+		for (KiePackage pkg : kiePackages) {
+		    for (org.kie.api.definition.rule.Rule rule : pkg.getRules()) {
+		        System.out.println("📦 룰 로드됨: " + rule.getName());
+		        totalRuleCount++;
+		    }
+		}
+		System.out.println("총 로드된 룰 개수: " + totalRuleCount);
+		System.out.println("===========================");
+        
+        
+        
         kieSession.insert(event);
-        kieSession.fireAllRules();
+        int count = kieSession.fireAllRules(); 
+        System.out.println("Fired rules count: " + count);
+        
         kieSession.dispose();
-
-        // 선택적으로 사용 가능
-        faultMonitorService.trackFaultEvent(event);
     }
 }
+

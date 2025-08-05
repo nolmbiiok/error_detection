@@ -11,8 +11,28 @@ configurations {
     compileClasspath
     annotationProcessor
 }
+
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'mysql' && details.requested.name == 'mysql-connector-java') {
+            details.useVersion '8.0.33'
+            details.because 'MySQL 9.x 드라이버는 Java 21 이상 필요, 현재 환경은 Java 17'
+        }
+    }
+}
+
+
 group = 'com.mentoring'
 version = '0.0.1-SNAPSHOT'
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'src/main/resources'
+            include '**/*'  // 모든 리소스를 포함
+        }
+    }
+}
 
 java {
 	toolchain {
@@ -26,13 +46,24 @@ repositories {
 
 dependencies {
 
+    //implementation 'mysql:mysql-connector-java:8.0.33' 
+	implementation 'mysql:mysql-connector-java:8.0.33'
+	
+    implementation 'org.apache.maven:maven-core:3.8.6'
+    implementation 'org.apache.maven:maven-embedder:3.8.6'
+    implementation 'org.apache.maven:maven-settings:3.8.6'
+    implementation 'org.apache.maven:maven-settings-builder:3.8.6'
+    implementation 'org.apache.maven:maven-model:3.8.6'
+    implementation 'org.codehaus.plexus:plexus-utils:3.3.0'
+    implementation 'org.codehaus.plexus:plexus-interpolation:1.26'
+    implementation 'org.codehaus.plexus:plexus-classworlds:2.6.0'
+	
     compileOnly 'org.projectlombok:lombok:1.18.32'
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.kafka:spring-kafka'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -40,11 +71,18 @@ dependencies {
 	implementation 'org.drools:drools-core:7.74.0.Final'
 	implementation 'org.drools:drools-compiler:7.74.0.Final'
 	implementation 'org.drools:drools-decisiontables:7.74.0.Final'
-	implementation 'org.kie:kie-ci:7.74.0.Final'
+	
+	implementation 'javax.inject:javax.inject:1'       
+	
+	
 	
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	
 	
+}
+
+tasks.named('processResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 tasks.named('test') {
