@@ -1,35 +1,29 @@
 package rules
 
-import com.mentoring.entity.FaultEventEntity;
+import com.mentoring.entity.FaultEventEntity
 
-rule "Debug Rule"
-when
-    $e : FaultEventEntity()
-then
-    System.out.println("✅ [DEBUG] 룰 실행됨 - " + $e.getFaultType());
-end
-
-rule "HLS_TIMEOUT 2회 이하는 LOW"
+// HLS_TIMEOUT 3회 이상이면 HIGH로 격상
+rule "HLS_TIMEOUT 지속 장애"
     when
-        $event : FaultEventEntity(faultType == "HLS_TIMEOUT", hlsTimeoutCount < 3)
-    then
-        System.out.println("💡 [RULE TRIGGERED] HLS_TIMEOUT 2회 이하는 LOW");
-        $event.setSeverity(FaultEventEntity.Severity.LOW);
-        $event.setReason("일시적 HLS 타임아웃 (정상 감시 범주)");
-end
-
-rule "HLS_TIMEOUT 3회 이상은 HIGH"
-    when
-        $event : FaultEventEntity(faultType == "HLS_TIMEOUT", hlsTimeoutCount >= 3)
+        $event : FaultEventEntity(
+            faultType == "HLS_TIMEOUT",
+            hlsTimeoutCount >= 3
+        )
     then
         $event.setSeverity(FaultEventEntity.Severity.HIGH);
         $event.setReason("HLS_TIMEOUT 지속 장애 상태");
+        System.out.println("⚠ 룰 실행됨 - HLS_TIMEOUT 지속 장애 감지");
 end
 
-
-rule "Debug Rule Test"
-when
-    $e : FaultEventEntity()
-then
-    System.out.println("💥 Drools 룰이 실행되었습니다!");
+rule "HLS_TIMEOUT 경고 단계"
+    when
+        $event : FaultEventEntity(
+            faultType == "HLS_TIMEOUT",
+            hlsTimeoutCount < 3
+        )
+    then
+        $event.setSeverity(FaultEventEntity.Severity.LOW);
+        $event.setReason("HLS_TIMEOUT 경고 상태");
+        System.out.println("⚠ 룰 실행됨 - HLS_TIMEOUT 경고 상태");
 end
+

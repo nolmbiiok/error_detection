@@ -21,11 +21,9 @@ public class KafkaProducerConfig {
     @Bean
     public ProducerFactory<String, FaultAlertDTO> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "172.17.0.1:9097"); // Kafka 주소
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "172.17.0.1:9097");
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-
-        // Optional: Type 정보 포함 여부 설정
         configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
 
         return new DefaultKafkaProducerFactory<>(configProps);

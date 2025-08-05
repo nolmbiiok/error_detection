@@ -28,6 +28,8 @@ public class FaultEventEntity {
     private Severity severity;
 
     private String reason;
+    
+    @Transient
     private long hlsTimeoutCount; 
     
   

@@ -16,30 +16,16 @@ import org.springframework.stereotype.Service;
 @Component
 public class KafkaFaultConsumer {
 
-    private final ObjectMapper objectMapper;
     private final FaultEventService faultEventService;
-    private final RedisService redisService; // 🔸 Redis 추가
 
-    public KafkaFaultConsumer(FaultEventService faultEventService, ObjectMapper objectMapper, RedisService redisService) {
+    public KafkaFaultConsumer(FaultEventService faultEventService) {
         this.faultEventService = faultEventService;
-        this.objectMapper = objectMapper;
-        this.redisService = redisService;
     }
 
     @KafkaListener(topics = "health-events", groupId = "fault-detector-group")
     public void consume(FaultEventEntity event) {
         System.out.println("[Kafka] 변환된 객체: " + event);
 
-        if ("HLS_TIMEOUT".equals(event.getFaultType())) {
-            String key = "fault:hls_timeout:" + event.getCctvId();
-            long count = redisService.increment(key, Duration.ofMinutes(10));
-            event.setHlsTimeoutCount(count);
-
-            if (count >= 3) {
-                event.setSeverity(FaultEventEntity.Severity.HIGH);
-                event.setReason("HLS_TIMEOUT 지속 장애 상태");
-            }
-        }
         faultEventService.checkAndProcess(event);
     }
 

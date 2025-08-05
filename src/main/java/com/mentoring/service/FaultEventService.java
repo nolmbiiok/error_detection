@@ -1,5 +1,6 @@
 package com.mentoring.service;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -9,7 +10,7 @@ import com.mentoring.entity.FaultEventEntity;
 import com.mentoring.kafka.KafkaFaultProducer;
 import com.mentoring.repository.FaultEventRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -20,20 +21,31 @@ public class FaultEventService {
     private final FaultRuleService faultRuleService; 
     private final FaultEventRepository repository;
     private final KafkaFaultProducer kafkaFaultProducer; 
-
+    private final RedisService redisService; 
+    
     public void checkAndProcess(FaultEventEntity incomingEvent) {
     	
     	applyBasicMapping(incomingEvent);
+    	final String hlsKey = "fault:hls_timeout:" + incomingEvent.getCctvId();
+
+
+        if ("HLS_TIMEOUT".equals(incomingEvent.getFaultType())) {
+            String key = "fault:hls_timeout:" + incomingEvent.getCctvId();
+            long cnt = redisService.incrementWindow(key, Duration.ofMinutes(10));
+            incomingEvent.setHlsTimeoutCount(cnt);
+        } else if ("HLS_OK".equals(incomingEvent.getFaultType())) {
+            redisService.reset(hlsKey);
+        }
+
         faultRuleService.checkWithRules(incomingEvent);
 
-
         if ("ICMP_OK".equals(incomingEvent.getFaultType())) {
-            repository.deleteByCctvIdAndFaultType(incomingEvent.getCctvId(), "ICMP_TIMEOUT");
-            repository.deleteByCctvIdAndFaultType(incomingEvent.getCctvId(), "ICMP_LOSS");
+            repository.deleteByCctvIdAndFaultTypeIn(incomingEvent.getCctvId(),
+                    List.of("ICMP_TIMEOUT","ICMP_LOSS","ICMP_FAILED"));
         }
         if ("HLS_OK".equals(incomingEvent.getFaultType())) {
-            repository.deleteByCctvIdAndFaultType(incomingEvent.getCctvId(), "HLS_TIMEOUT");
-            repository.deleteByCctvIdAndFaultType(incomingEvent.getCctvId(), "HLS_ERROR");
+            repository.deleteByCctvIdAndFaultTypeIn(incomingEvent.getCctvId(),
+                    List.of("HLS_TIMEOUT","HLS_ERROR","HLS_NOT_FOUND"));
         }
         
         FaultEventEntity saved = repository.findByCctvIdAndFaultType(
